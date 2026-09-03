@@ -1,7 +1,12 @@
 import streamlit as st
 
-from openai import OpenAI
-from openai import AuthenticationError, APIConnectionError, APIError, RateLimitError
+from openai import (
+    OpenAI,
+    AuthenticationError,
+    APIConnectionError,
+    APIError,
+    RateLimitError,
+)
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import (
@@ -24,36 +29,110 @@ st.set_page_config(
 
 
 # ============================================================
-# LEGAL AI SYSTEM PROMPT
+# LEGAL SYSTEM PROMPT
 # ============================================================
 
 SYSTEM_PROMPT = """
-You are LegalEase AI, a legal-information assistant.
+You are LegalEase AI.
 
-Your job is to explain legal concepts in simple, plain language.
+You are a DOMAIN-SPECIFIC legal information assistant.
 
-You can help with:
+Your ONLY purpose is to answer questions related to LAW and
+LEGAL INFORMATION.
 
-- Explain legal terminology
-- Explain contracts and clauses
-- Summarize legal documents
-- Explain basic rights
-- Generate questions for a lawyer
-- Explain legal procedures
-- Classify legal documents
+You are trained to help users with:
 
-Important rules:
+1. Legal terminology
+2. Contract explanations
+3. Legal document explanations
+4. Basic rights information
+5. Employment law concepts
+6. Consumer rights concepts
+7. Property and rental law concepts
+8. Business and commercial law concepts
+9. Family law concepts
+10. Intellectual property concepts
+11. Legal procedures
+12. Court and dispute-resolution procedures
+13. Questions to ask a lawyer
+14. Basic legal document classification
 
-1. Use simple language.
-2. Explain legal jargon whenever possible.
-3. Give examples when useful.
-4. Do not claim to be a lawyer.
-5. Do not present your response as a substitute for legal advice.
-6. Laws differ between countries, states and jurisdictions.
-7. If jurisdiction matters, ask the user for their country/state.
-8. Never invent laws, statutes, cases, deadlines or citations.
-9. For important legal decisions, recommend consulting a qualified lawyer.
-10. Clearly state uncertainty when the available information is insufficient.
+============================================================
+STRICT DOMAIN RULE
+============================================================
+
+ONLY answer questions that are substantially related to
+legal information.
+
+Examples of LEGAL questions:
+
+- What does indemnification mean?
+- What is a non-compete clause?
+- Explain this contract clause.
+- What are basic employee rights?
+- What is a lease agreement?
+- What is the difference between a plaintiff and defendant?
+- What does breach of contract mean?
+- How does a civil lawsuit generally work?
+- What questions should I ask my lawyer?
+- What type of legal document is this?
+
+Examples of NON-LEGAL questions:
+
+- How do I cook pasta?
+- Write Python code.
+- Who won a football match?
+- What is the weather?
+- Help me plan a vacation.
+- Write a marketing email.
+- Explain mathematics.
+- Tell me a joke.
+- What laptop should I buy?
+
+For NON-LEGAL questions, DO NOT answer the question.
+
+Instead respond exactly with:
+
+"I don't have training for that topic. LegalEase AI is designed
+specifically for legal-information questions. Please ask me
+about legal terminology, contracts, rights, legal procedures,
+or another legal topic."
+
+============================================================
+LEGAL SAFETY
+============================================================
+
+You provide GENERAL LEGAL INFORMATION, not legal advice.
+
+Do not claim to be a lawyer.
+
+Do not tell users that they definitely will win or lose a case.
+
+Do not make definitive legal conclusions when important facts
+are missing.
+
+Laws vary by country, state, province and jurisdiction.
+
+When jurisdiction matters, ask the user for their jurisdiction.
+
+Never invent:
+
+- laws
+- statutes
+- court cases
+- legal citations
+- deadlines
+- penalties
+- legal requirements
+
+Explain complicated legal concepts in simple language.
+
+Use headings and bullet points when useful.
+
+Give examples when they make the concept easier to understand.
+
+For important legal decisions, recommend consulting a qualified
+lawyer.
 """
 
 
@@ -82,7 +161,7 @@ if "connection_error" not in st.session_state:
 # ============================================================
 
 st.markdown(
-    """
+"""
 <style>
 
 @import url(
@@ -125,23 +204,9 @@ section[data-testid="stSidebar"] > div {
 }
 
 
-/* Sidebar headings */
-
-section[data-testid="stSidebar"] h3 {
-    color: #182230;
-    font-size: 17px;
-}
-
-
-/* Sidebar labels */
-
-section[data-testid="stSidebar"] label {
-    color: #344054;
-    font-size: 13px;
-}
-
-
-/* Sidebar brand */
+/* ==========================================================
+   SIDEBAR BRAND
+   ========================================================== */
 
 .brand {
     padding: 8px 4px 22px 4px;
@@ -182,7 +247,9 @@ section[data-testid="stSidebar"] label {
 }
 
 
-/* Sidebar section labels */
+/* ==========================================================
+   SIDEBAR SECTION
+   ========================================================== */
 
 .sidebar-label {
     color: #929aa6;
@@ -199,7 +266,9 @@ section[data-testid="stSidebar"] label {
 }
 
 
-/* Connection status */
+/* ==========================================================
+   CONNECTION STATUS
+   ========================================================== */
 
 .connection {
     border: 1px solid #dce8df;
@@ -231,7 +300,9 @@ section[data-testid="stSidebar"] label {
 }
 
 
-/* Error box */
+/* ==========================================================
+   ERROR
+   ========================================================== */
 
 .api-error {
     background: #fff6f5;
@@ -253,7 +324,7 @@ section[data-testid="stSidebar"] label {
 
 
 /* ==========================================================
-   MAIN HERO
+   HERO
    ========================================================== */
 
 .hero {
@@ -304,24 +375,13 @@ section[data-testid="stSidebar"] label {
 
 
 /* ==========================================================
-   QUESTION BOX
+   QUESTION AREA
    ========================================================== */
 
-.question-card {
-    background: #ffffff;
-
-    border: 1px solid #e3e6eb;
-
-    border-radius: 18px;
-
-    padding: 18px;
-
-    margin: 20px auto 28px;
-
+.question-wrapper {
     max-width: 820px;
 
-    box-shadow:
-        0 10px 35px rgba(20, 30, 45, 0.05);
+    margin: 20px auto 28px;
 }
 
 .question-label {
@@ -335,14 +395,16 @@ section[data-testid="stSidebar"] label {
 }
 
 
-/* Text area */
+/* ==========================================================
+   TEXT AREA
+   ========================================================== */
 
 div[data-testid="stTextArea"] textarea {
     border: 1px solid #e0e4e9;
 
-    border-radius: 12px;
+    border-radius: 13px;
 
-    background: #fbfcfd;
+    background: #ffffff;
 
     color: #182230;
 
@@ -350,7 +412,7 @@ div[data-testid="stTextArea"] textarea {
 
     padding: 14px;
 
-    min-height: 105px;
+    min-height: 115px;
 }
 
 div[data-testid="stTextArea"] textarea:focus {
@@ -388,40 +450,8 @@ div[data-testid="stTextArea"] textarea:focus {
 
 
 /* ==========================================================
-   WELCOME / FEATURE CARDS
+   FEATURE CARDS
    ========================================================== */
-
-.intro-card {
-    background: white;
-
-    border: 1px solid #e4e7ec;
-
-    border-radius: 17px;
-
-    padding: 20px 22px;
-
-    margin: 10px auto 22px;
-
-    max-width: 820px;
-
-    box-shadow:
-        0 7px 25px rgba(20, 30, 45, .03);
-}
-
-.intro-title {
-    font-size: 15px;
-
-    font-weight: 700;
-
-    margin-bottom: 5px;
-}
-
-.intro-text {
-    color: #687385;
-
-    font-size: 13px;
-}
-
 
 .feature {
     background: white;
@@ -460,6 +490,42 @@ div[data-testid="stTextArea"] textarea:focus {
     font-size: 12px;
 
     line-height: 1.55;
+}
+
+
+/* ==========================================================
+   INTRO CARD
+   ========================================================== */
+
+.intro-card {
+    background: white;
+
+    border: 1px solid #e4e7ec;
+
+    border-radius: 17px;
+
+    padding: 20px 22px;
+
+    margin: 10px auto 22px;
+
+    max-width: 820px;
+
+    box-shadow:
+        0 7px 25px rgba(20, 30, 45, .03);
+}
+
+.intro-title {
+    font-size: 15px;
+
+    font-weight: 700;
+
+    margin-bottom: 5px;
+}
+
+.intro-text {
+    color: #687385;
+
+    font-size: 13px;
 }
 
 
@@ -517,7 +583,7 @@ div[data-testid="stChatMessage"] {
 
 </style>
 """,
-    unsafe_allow_html=True,
+unsafe_allow_html=True,
 )
 
 
@@ -527,35 +593,41 @@ div[data-testid="stChatMessage"] {
 
 with st.sidebar:
 
+    # --------------------------------------------------------
+    # BRAND
+    # --------------------------------------------------------
+
     st.markdown(
-        """
-        <div class="brand">
+"""
+<div class="brand">
 
-            <div class="brand-mark">
-                ⚖
-            </div>
+    <div class="brand-mark">
+        ⚖
+    </div>
 
-            <div class="brand-name">
-                LegalEase AI
-            </div>
+    <div class="brand-name">
+        LegalEase AI
+    </div>
 
-            <div class="brand-sub">
-                Plain-language legal information
-            </div>
+    <div class="brand-sub">
+        Plain-language legal information
+    </div>
 
-        </div>
-        """,
+</div>
+""",
         unsafe_allow_html=True,
     )
+
+
+    # --------------------------------------------------------
+    # AI CONNECTION
+    # --------------------------------------------------------
 
     st.markdown(
         '<div class="sidebar-label">AI Connection</div>',
         unsafe_allow_html=True,
     )
 
-    # --------------------------------------------------------
-    # API KEY
-    # --------------------------------------------------------
 
     api_key_input = st.text_input(
         "OpenAI API Key",
@@ -564,9 +636,6 @@ with st.sidebar:
         placeholder="sk-...",
     )
 
-    # --------------------------------------------------------
-    # MODEL
-    # --------------------------------------------------------
 
     available_models = [
         "gpt-4o-mini",
@@ -574,6 +643,7 @@ with st.sidebar:
         "gpt-4.1-mini",
         "gpt-4.1",
     ]
+
 
     model_input = st.selectbox(
         "Model",
@@ -583,12 +653,14 @@ with st.sidebar:
         ),
     )
 
+
     st.caption(
-        "The selected model will be checked when you connect."
+        "Your API key and selected model are checked when you connect."
     )
 
+
     # --------------------------------------------------------
-    # CONNECT BUTTON
+    # CONNECT
     # --------------------------------------------------------
 
     if st.button(
@@ -597,9 +669,10 @@ with st.sidebar:
         use_container_width=True,
     ):
 
-        # Clear old status
         st.session_state.connection_error = ""
+
         st.session_state.connected = False
+
 
         if not api_key_input.strip():
 
@@ -611,30 +684,35 @@ with st.sidebar:
 
             try:
 
-                # ------------------------------------------------
-                # 1. CHECK API KEY
-                # ------------------------------------------------
-
+                # Create OpenAI client
                 client = OpenAI(
                     api_key=api_key_input.strip()
                 )
 
-                # models.list() requires valid authentication
-                client.models.list()
 
                 # ------------------------------------------------
-                # 2. CHECK SELECTED MODEL
+                # CHECK AUTHENTICATION
+                # ------------------------------------------------
+
+                client.models.list()
+
+
+                # ------------------------------------------------
+                # CHECK MODEL
                 # ------------------------------------------------
 
                 client.models.retrieve(
                     model_input
                 )
 
+
                 # ------------------------------------------------
-                # 3. EVERYTHING IS VALID
+                # SUCCESS
                 # ------------------------------------------------
 
-                st.session_state.api_key = api_key_input.strip()
+                st.session_state.api_key = (
+                    api_key_input.strip()
+                )
 
                 st.session_state.model = model_input
 
@@ -642,12 +720,14 @@ with st.sidebar:
 
                 st.session_state.connection_error = ""
 
+
             except AuthenticationError:
 
                 st.session_state.connection_error = (
                     "Invalid OpenAI API key. "
-                    "Please check the key and try again."
+                    "Please check your key and try again."
                 )
+
 
             except RateLimitError:
 
@@ -656,6 +736,7 @@ with st.sidebar:
                     "a rate limit or account/billing restriction."
                 )
 
+
             except APIConnectionError:
 
                 st.session_state.connection_error = (
@@ -663,11 +744,13 @@ with st.sidebar:
                     "Check your internet connection and try again."
                 )
 
+
             except APIError as error:
 
                 st.session_state.connection_error = (
                     f"OpenAI API error: {error}"
                 )
+
 
             except Exception as error:
 
@@ -675,48 +758,60 @@ with st.sidebar:
                     f"Connection failed: {error}"
                 )
 
+
     # --------------------------------------------------------
-    # SHOW CONNECTION ERROR
+    # ERROR MESSAGE
     # --------------------------------------------------------
 
     if st.session_state.connection_error:
 
         st.markdown(
             f"""
-            <div class="api-error">
-                <strong>Connection failed</strong><br>
-                {st.session_state.connection_error}
-            </div>
-            """,
+<div class="api-error">
+
+    <strong>Connection failed</strong>
+    <br><br>
+
+    {st.session_state.connection_error}
+
+</div>
+""",
             unsafe_allow_html=True,
         )
 
+
     # --------------------------------------------------------
-    # SHOW CONNECTED STATE
+    # SUCCESS MESSAGE
     # --------------------------------------------------------
 
     if st.session_state.connected:
 
         st.markdown(
-            """
-            <div class="connection">
-                <span class="dot"></span>
-                OpenAI connected successfully
-            </div>
-            """,
+"""
+<div class="connection">
+
+    <span class="dot"></span>
+
+    OpenAI connected successfully
+
+</div>
+""",
             unsafe_allow_html=True,
         )
 
+
     st.divider()
 
-    # ========================================================
+
+    # --------------------------------------------------------
     # LEGAL ASSISTANT
-    # ========================================================
+    # --------------------------------------------------------
 
     st.markdown(
         '<div class="sidebar-label">Legal Assistant</div>',
         unsafe_allow_html=True,
     )
+
 
     assistant_mode = st.selectbox(
         "Focus",
@@ -732,16 +827,19 @@ with st.sidebar:
         ],
     )
 
+
     st.divider()
 
-    # ========================================================
+
+    # --------------------------------------------------------
     # CONVERSATION
-    # ========================================================
+    # --------------------------------------------------------
 
     st.markdown(
         '<div class="sidebar-label">Conversation</div>',
         unsafe_allow_html=True,
     )
+
 
     if st.button(
         "＋ New conversation",
@@ -752,11 +850,10 @@ with st.sidebar:
 
         st.rerun()
 
+
     st.markdown("---")
 
-    st.caption(
-        "LegalEase AI"
-    )
+    st.caption("LegalEase AI")
 
     st.caption(
         "General information only • Not legal advice"
@@ -768,49 +865,47 @@ with st.sidebar:
 # ============================================================
 
 st.markdown(
-    """
-    <div class="hero">
+"""
+<div class="hero">
 
-        <div class="hero-kicker">
-            LEGAL INFORMATION, SIMPLIFIED
-        </div>
-
-        <h1>
-            Understand the law.<br>
-            Without the jargon.
-        </h1>
-
-        <p>
-            Ask questions about legal terms, contracts,
-            procedures and basic rights — and get clear
-            explanations in everyday language.
-        </p>
-
+    <div class="hero-kicker">
+        LEGAL INFORMATION, SIMPLIFIED
     </div>
-    """,
+
+    <h1>
+        Understand the law.<br>
+        Without the jargon.
+    </h1>
+
+    <p>
+        Ask questions about legal terms, contracts,
+        procedures and basic rights — and get clear
+        explanations in everyday language.
+    </p>
+
+</div>
+""",
     unsafe_allow_html=True,
 )
 
 
 # ============================================================
-# MAIN QUESTION BOX
+# QUESTION AREA
 # ============================================================
 
 st.markdown(
-    """
-    <div class="question-card">
+"""
+<div class="question-wrapper">
 
-        <div class="question-label">
-            Ask LegalEase
-        </div>
-
+    <div class="question-label">
+        Ask LegalEase
     </div>
-    """,
+
+</div>
+""",
     unsafe_allow_html=True,
 )
 
-
-# The actual input is in the MAIN AREA, not sidebar.
 
 user_question = st.text_area(
     "Your legal question",
@@ -818,12 +913,15 @@ user_question = st.text_area(
         "Example: What can my employer terminate me for "
         "without notice?"
     ),
-    height=110,
+    height=115,
     label_visibility="collapsed",
 )
 
 
-ask_col1, ask_col2, ask_col3 = st.columns([1, 1, 1])
+ask_col1, ask_col2, ask_col3 = st.columns(
+    [1.2, 1, 1.2]
+)
+
 
 with ask_col2:
 
@@ -835,29 +933,30 @@ with ask_col2:
 
 
 # ============================================================
-# WELCOME CARDS
+# WELCOME FEATURES
 # ============================================================
 
 if not st.session_state.messages:
 
     st.markdown(
-        """
-        <div class="intro-card">
+"""
+<div class="intro-card">
 
-            <div class="intro-title">
-                Welcome to LegalEase
-            </div>
+    <div class="intro-title">
+        Welcome to LegalEase
+    </div>
 
-            <div class="intro-text">
-                Ask a question about a legal term, contract,
-                procedure or basic right. LegalEase will explain
-                it in simple language.
-            </div>
+    <div class="intro-text">
+        Ask about a legal term, contract, right,
+        procedure or legal document. LegalEase will
+        explain it in simple language.
+    </div>
 
-        </div>
-        """,
+</div>
+""",
         unsafe_allow_html=True,
     )
+
 
     cards = [
         (
@@ -865,26 +964,31 @@ if not st.session_state.messages:
             "Legal terminology",
             "Understand unfamiliar legal words and phrases.",
         ),
+
         (
             "▤",
             "Explain contracts",
             "Break down clauses and explain what they mean.",
         ),
+
         (
             "≡",
             "Summarize documents",
             "Turn lengthy legal text into a clear summary.",
         ),
+
         (
             "◈",
             "Basic rights",
             "Learn general information about common legal rights.",
         ),
+
         (
             "?",
             "Questions for a lawyer",
             "Prepare focused questions before a consultation.",
         ),
+
         (
             "→",
             "Legal procedures",
@@ -892,47 +996,62 @@ if not st.session_state.messages:
         ),
     ]
 
-    for start in range(0, len(cards), 3):
 
-        row = cards[start:start + 3]
+    for start in range(
+        0,
+        len(cards),
+        3,
+    ):
+
+        row = cards[
+            start:start + 3
+        ]
 
         columns = st.columns(3)
 
-        for column, card in zip(columns, row):
+
+        for column, card in zip(
+            columns,
+            row,
+        ):
 
             icon, title, description = card
+
 
             with column:
 
                 st.markdown(
                     f"""
-                    <div class="feature">
+<div class="feature">
 
-                        <div class="feature-icon">
-                            {icon}
-                        </div>
+    <div class="feature-icon">
+        {icon}
+    </div>
 
-                        <div class="feature-title">
-                            {title}
-                        </div>
+    <div class="feature-title">
+        {title}
+    </div>
 
-                        <div class="feature-text">
-                            {description}
-                        </div>
+    <div class="feature-text">
+        {description}
+    </div>
 
-                    </div>
-                    """,
+</div>
+""",
                     unsafe_allow_html=True,
                 )
 
 
 # ============================================================
-# DISPLAY PREVIOUS CHAT
+# DISPLAY CHAT HISTORY
 # ============================================================
 
 for message in st.session_state.messages:
 
-    if isinstance(message, HumanMessage):
+    if isinstance(
+        message,
+        HumanMessage,
+    ):
 
         with st.chat_message("user"):
 
@@ -940,7 +1059,11 @@ for message in st.session_state.messages:
                 message.content
             )
 
-    elif isinstance(message, AIMessage):
+
+    elif isinstance(
+        message,
+        AIMessage,
+    ):
 
         with st.chat_message("assistant"):
 
@@ -950,13 +1073,74 @@ for message in st.session_state.messages:
 
 
 # ============================================================
+# LEGAL DOMAIN CLASSIFIER
+# ============================================================
+
+def check_if_legal_question(
+    question,
+    api_key,
+    model,
+):
+
+    classifier_prompt = f"""
+Determine whether the following user question is substantially
+related to LAW or LEGAL INFORMATION.
+
+Return ONLY one word:
+
+LEGAL
+
+or
+
+NONLEGAL
+
+Question:
+{question}
+"""
+
+
+    classifier = ChatOpenAI(
+        model=model,
+        temperature=0,
+        api_key=api_key,
+    )
+
+
+    result = classifier.invoke(
+        [
+            SystemMessage(
+                content=(
+                    "You are a strict legal-domain classifier. "
+                    "Only classify questions that are genuinely "
+                    "related to law or legal information as LEGAL."
+                )
+            ),
+            HumanMessage(
+                content=classifier_prompt
+            ),
+        ]
+    )
+
+
+    classification = (
+        result.content
+        .strip()
+        .upper()
+    )
+
+
+    return classification == "LEGAL"
+
+
+# ============================================================
 # ASK LEGAL QUESTION
 # ============================================================
 
 if ask_button:
 
+
     # --------------------------------------------------------
-    # FIRST CHECK CONNECTION
+    # CHECK CONNECTION
     # --------------------------------------------------------
 
     if not st.session_state.connected:
@@ -968,8 +1152,9 @@ if ask_button:
 
         st.stop()
 
+
     # --------------------------------------------------------
-    # CHECK QUESTION
+    # CHECK EMPTY QUESTION
     # --------------------------------------------------------
 
     if not user_question.strip():
@@ -980,21 +1165,85 @@ if ask_button:
 
         st.stop()
 
+
     # --------------------------------------------------------
-    # ADD USER MESSAGE
+    # CHECK LEGAL DOMAIN
+    # --------------------------------------------------------
+
+    try:
+
+        is_legal = check_if_legal_question(
+            user_question,
+            st.session_state.api_key,
+            st.session_state.model,
+        )
+
+
+    except AuthenticationError:
+
+        st.error(
+            "Your OpenAI API key is no longer valid. "
+            "Please reconnect."
+        )
+
+        st.session_state.connected = False
+
+        st.stop()
+
+
+    except Exception as error:
+
+        st.error(
+            f"Unable to check the question: {error}"
+        )
+
+        st.stop()
+
+
+    # --------------------------------------------------------
+    # NON-LEGAL QUESTION
+    # --------------------------------------------------------
+
+    if not is_legal:
+
+        with st.chat_message("user"):
+
+            st.write(
+                user_question
+            )
+
+
+        with st.chat_message("assistant"):
+
+            st.warning(
+                "I don't have training for that topic. "
+                "LegalEase AI is designed specifically for "
+                "legal-information questions. Please ask me "
+                "about legal terminology, contracts, rights, "
+                "legal procedures, or another legal topic."
+            )
+
+
+        st.stop()
+
+
+    # --------------------------------------------------------
+    # LEGAL QUESTION
     # --------------------------------------------------------
 
     st.session_state.messages.append(
         HumanMessage(
-            content=user_question.strip()
+            content=user_question
         )
     )
+
 
     with st.chat_message("user"):
 
         st.write(
-            user_question.strip()
+            user_question
         )
+
 
     # --------------------------------------------------------
     # CREATE CHAT MODEL
@@ -1008,6 +1257,7 @@ if ask_button:
             api_key=st.session_state.api_key,
         )
 
+
         # ----------------------------------------------------
         # SYSTEM MESSAGE
         # ----------------------------------------------------
@@ -1016,36 +1266,41 @@ if ask_button:
             content=(
                 SYSTEM_PROMPT
                 + "\n\n"
-                + f"The selected LegalEase mode is: "
+                + f"The selected LegalEase focus is: "
                 f"{assistant_mode}"
             )
         )
 
-        # ----------------------------------------------------
-        # BUILD HISTORY
-        # ----------------------------------------------------
-
-        conversation = [
-            system_message
-        ] + st.session_state.messages
 
         # ----------------------------------------------------
-        # AI RESPONSE
+        # CONVERSATION
+        # ----------------------------------------------------
+
+        conversation = (
+            [system_message]
+            + st.session_state.messages
+        )
+
+
+        # ----------------------------------------------------
+        # RESPONSE
         # ----------------------------------------------------
 
         with st.chat_message("assistant"):
 
             with st.spinner(
-                "Preparing a clear explanation..."
+                "Preparing a clear legal explanation..."
             ):
 
                 response = chat.invoke(
                     conversation
                 )
 
+
             st.write(
                 response.content
             )
+
 
         # ----------------------------------------------------
         # SAVE RESPONSE
@@ -1057,6 +1312,7 @@ if ask_button:
             )
         )
 
+
     except AuthenticationError:
 
         st.error(
@@ -1066,12 +1322,14 @@ if ask_button:
 
         st.session_state.connected = False
 
+
     except RateLimitError:
 
         st.error(
             "OpenAI returned a rate-limit or billing error. "
             "Please check your OpenAI account."
         )
+
 
     except APIConnectionError:
 
@@ -1080,11 +1338,13 @@ if ask_button:
             "Please try again."
         )
 
+
     except APIError as error:
 
         st.error(
             f"OpenAI API error: {error}"
         )
+
 
     except Exception as error:
 
@@ -1098,11 +1358,13 @@ if ask_button:
 # ============================================================
 
 st.markdown(
-    """
-    <div class="disclaimer">
-        LegalEase AI provides general legal information and does not
-        replace advice from a qualified legal professional.
-    </div>
-    """,
+"""
+<div class="disclaimer">
+
+    LegalEase AI provides general legal information and does not
+    replace advice from a qualified legal professional.
+
+</div>
+""",
     unsafe_allow_html=True,
 )
